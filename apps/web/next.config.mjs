@@ -1,3 +1,8 @@
+import { existsSync } from 'node:fs';
+
+// El .env vive en la raíz del monorepo; Next sólo mira su propia carpeta.
+if (existsSync('../../.env')) process.loadEnvFile('../../.env');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ['@vd/core', '@vd/db', '@vd/jobs'],
