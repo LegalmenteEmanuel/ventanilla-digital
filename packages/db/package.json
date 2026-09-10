@@ -13,14 +13,12 @@
     "build": "prisma generate",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "generate": "prisma generate",
-    "migrate": "prisma migrate dev",
-    "migrate:deploy": "prisma migrate deploy",
-    "studio": "prisma studio",
-    "seed": "prisma db seed",
+    "migrate": "if [ -f ../../.env ]; then set -a; . ../../.env; set +a; fi; prisma migrate dev --name init",
+    "migrate:deploy": "if [ -f ../../.env ]; then set -a; . ../../.env; set +a; fi; prisma migrate deploy",
+    "push": "if [ -f ../../.env ]; then set -a; . ../../.env; set +a; fi; prisma db push",
+    "studio": "if [ -f ../../.env ]; then set -a; . ../../.env; set +a; fi; prisma studio",
+    "seed": "node --env-file-if-exists=../../.env prisma/seed.ts",
     "lint": "prettier --check \"src/**/*.ts\" \"prisma/**/*.ts\""
-  },
-  "prisma": {
-    "seed": "node prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.1.0",

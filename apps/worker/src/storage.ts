@@ -1,16 +1,18 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 
+import { fromRoot } from '@vd/jobs';
+
 import { env } from './env.ts';
 
 /**
- * Almacenamiento de documentos. Driver `local`: escribe bajo `STORAGE_LOCAL_DIR`.
- * `apps/web` lee del mismo directorio para servir los PDF.
+ * Almacenamiento de documentos. Driver `local`: escribe bajo `STORAGE_LOCAL_DIR`
+ * (anclado a la raíz del monorepo). `apps/web` lee del mismo directorio.
  *
  * ponytail: sólo driver local; añadir S3 cuando haya despliegue real.
  */
 function pathFor(key: string): string {
-  return resolve(env.STORAGE_LOCAL_DIR, key);
+  return resolve(fromRoot(env.STORAGE_LOCAL_DIR), key);
 }
 
 export async function save(key: string, data: Buffer): Promise<string> {

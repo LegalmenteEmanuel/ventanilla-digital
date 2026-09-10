@@ -1,6 +1,8 @@
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
+import { fromRoot } from '@vd/jobs';
+
 import { auth } from '@/auth';
 import { getRequestByCode } from '@/lib/data';
 import { institutionIds } from '@/lib/rbac';
@@ -22,7 +24,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ code: string }
   const sameInstitution = institutionIds(session).includes(req.procedureType.institutionId);
   if (!owner && !sameInstitution) return new Response('Prohibido', { status: 403 });
 
-  const dir = process.env.STORAGE_LOCAL_DIR ?? './.storage';
+  const dir = fromRoot(process.env.STORAGE_LOCAL_DIR ?? './.storage');
   const bytes = await readFile(resolve(dir, req.signature.pdfStorageKey));
 
   return new Response(new Uint8Array(bytes), {

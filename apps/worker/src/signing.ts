@@ -1,7 +1,9 @@
 import { createHash, createSign, randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 
-const KEY_PATH = process.env.SIGNING_PRIVATE_KEY_PATH ?? './.keys/signing.pem';
+import { fromRoot } from '@vd/jobs';
+
+const KEY_PATH = fromRoot(process.env.SIGNING_PRIVATE_KEY_PATH ?? './.keys/signing.pem');
 const CERT_SUBJECT =
   process.env.SIGNING_CERT_SUBJECT ?? 'CN=Ventanilla Digital (DEMO), O=Ventanilla Digital, C=HN';
 

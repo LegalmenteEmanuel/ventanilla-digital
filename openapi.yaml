@@ -72,7 +72,17 @@ components:
   schemas:
     VerificacionOk:
       type: object
-      required: [valid, codigoVerificacion, solicitud, procedimiento, institucion, emitidoEl, algoritmo, hash]
+      required:
+        [
+          valid,
+          codigoVerificacion,
+          solicitud,
+          procedimiento,
+          institucion,
+          emitidoEl,
+          algoritmo,
+          hash,
+        ]
       properties:
         valid:
           const: true

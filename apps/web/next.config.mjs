@@ -9,8 +9,10 @@ const nextConfig = {
   serverExternalPackages: ['@prisma/client', 'bullmq', 'ioredis'],
   eslint: { ignoreDuringBuilds: true },
   webpack: (config) => {
-    // bullmq referencia un cliente opcional que no usamos (usamos ioredis).
+    // bullmq arrastra un cliente opcional (valkey) y un `require` dinámico para
+    // procesadores en sandbox que no usamos. Ninguno afecta al runtime.
     config.resolve.alias = { ...config.resolve.alias, '@valkey/valkey-glide': false };
+    config.ignoreWarnings = [...(config.ignoreWarnings ?? []), { module: /bullmq/ }];
     return config;
   },
 };

@@ -239,7 +239,11 @@ async function main() {
             action: 'aprobar',
             actorId: revisor.id,
             comment: 'Verificado contra planilla de RRHH.',
-            effects: [{ type: 'sign' }, { type: 'generate_pdf' }, { type: 'notify' }],
+            effects: [
+              { type: 'sign', params: { document: 'constancia' } },
+              { type: 'generate_pdf', params: { template: 'constancia', withQr: true } },
+              { type: 'notify', params: { template: 'solicitud_aprobada', to: 'citizen' } },
+            ],
           },
         ],
       },

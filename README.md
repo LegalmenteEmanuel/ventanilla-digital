@@ -117,17 +117,17 @@ Ese diagrama **es** la `WorkflowDefinition` que vive en la base de datos
 
 ## Stack
 
-| Capa             | Tecnología                                                         |
-| ---------------- | ---------------------------------------------------------------- |
-| Frontend + BFF   | Next.js 15 (App Router, Server Actions), React 19, Tailwind 4    |
-| Dominio          | TypeScript puro (`@vd/core`), sin dependencias                  |
-| Datos            | PostgreSQL 16 + Prisma 6                                         |
-| Colas / trabajos | Redis + BullMQ (`apps/worker`)                                   |
-| Auth             | Auth.js (credenciales, JWT, RBAC por membresía)                 |
-| Validación       | Ajv (JSON Schema en la frontera de confianza)                   |
-| Documentos       | pdfkit + qrcode; almacén local (driver S3 pendiente)            |
-| Infra local      | Docker Compose (Postgres, Redis, Mailhog)                       |
-| Tooling          | pnpm workspaces, Prettier, `node:test`                          |
+| Capa             | Tecnología                                                        |
+| ---------------- | ----------------------------------------------------------------- |
+| Frontend + BFF   | Next.js 15 (App Router, Server Actions), React 19, Tailwind 4     |
+| Dominio          | TypeScript puro (`@vd/core`), sin dependencias                    |
+| Datos            | PostgreSQL 16 + Prisma 6                                          |
+| Colas / trabajos | Redis + BullMQ (`apps/worker`)                                    |
+| Auth             | Auth.js (credenciales, JWT, RBAC por membresía)                   |
+| Validación       | Ajv (JSON Schema en la frontera de confianza)                     |
+| Documentos       | pdfkit + qrcode; almacén local (driver S3 pendiente)              |
+| Infra local      | Docker Compose (Postgres, Redis, Mailhog)                         |
+| Tooling          | pnpm workspaces, Prettier, `node:test`                            |
 | CI               | GitHub Actions (build · lint · typecheck · test · compose config) |
 
 ## Estructura
@@ -168,11 +168,11 @@ pnpm dev                         # web en :3000  +  worker
 
 Contraseña `Password123!`:
 
-| Correo                            | Rol                  |
-| --------------------------------- | -------------------- |
-| `revisor@alcaldia-demo.local`     | revisor (aprueba)    |
-| `funcionario@alcaldia-demo.local` | funcionario (bandeja)|
-| `ana@correo.local`                | ciudadana            |
+| Correo                            | Rol                   |
+| --------------------------------- | --------------------- |
+| `revisor@alcaldia-demo.local`     | revisor (aprueba)     |
+| `funcionario@alcaldia-demo.local` | funcionario (bandeja) |
+| `ana@correo.local`                | ciudadana             |
 
 ### Probar el flujo completo
 
