@@ -1,0 +1,302 @@
+// Modelo de datos de Ventanilla Digital.
+//
+// Bloques:
+//   1. Organización (multi-institución)         Institution, Department
+//   2. Identidad y control de acceso (RBAC)     User, Account, Session, Membership
+//   3. Catálogo de trámites                     ProcedureType
+//   4. Solicitudes y su ciclo de vida           Request, RequestDocument, WorkflowTransitionLog
+//   5. Firma digital y verificación             Signature
+//   6. Auditoría y notificaciones               AuditLog, Notification
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// 1. Organización
+// ---------------------------------------------------------------------------
+
+model Institution {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  departments    Department[]
+  memberships    Membership[]
+  procedureTypes ProcedureType[]
+}
+
+model Department {
+  id            String   @id @default(cuid())
+  institutionId String
+  name          String
+  createdAt     DateTime @default(now())
+
+  institution Institution  @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  memberships Membership[]
+
+  @@unique([institutionId, name])
+}
+
+// ---------------------------------------------------------------------------
+// 2. Identidad y RBAC
+// ---------------------------------------------------------------------------
+
+enum Role {
+  CIUDADANO
+  FUNCIONARIO
+  REVISOR
+  ADMIN_INSTITUCIONAL
+  SUPERADMIN
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  passwordHash  String?
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts        Account[]
+  sessions        Session[]
+  memberships     Membership[]
+  requests        Request[]                @relation("RequestCitizen")
+  uploads         RequestDocument[]
+  transitions     WorkflowTransitionLog[]
+  signatures      Signature[]
+  auditLogs       AuditLog[]
+  notifications   Notification[]
+}
+
+/// Un usuario obtiene un rol *dentro de una institución* mediante una membresía.
+/// Un ciudadano no necesita membresía (usa la plataforma como solicitante).
+model Membership {
+  id            String   @id @default(cuid())
+  userId        String
+  institutionId String
+  departmentId  String?
+  role          Role
+  createdAt     DateTime @default(now())
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  institution Institution  @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  department  Department?  @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, institutionId, role])
+  @@index([institutionId, role])
+}
+
+// --- Adaptador Auth.js (NextAuth) ---
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ---------------------------------------------------------------------------
+// 3. Catálogo de trámites
+// ---------------------------------------------------------------------------
+
+/// Plantilla de un trámite: qué formulario pide y por qué flujo pasa.
+/// `formSchema` es un JSON Schema; `workflowDefinition` es una
+/// `WorkflowDefinition` de @vd/core. Ambos son datos: se editan sin desplegar.
+model ProcedureType {
+  id                 String   @id @default(cuid())
+  institutionId      String
+  slug               String
+  name               String
+  description        String?
+  formSchema         Json
+  workflowDefinition Json
+  version            Int      @default(1)
+  active             Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  institution Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  requests    Request[]
+
+  @@unique([institutionId, slug])
+}
+
+// ---------------------------------------------------------------------------
+// 4. Solicitudes
+// ---------------------------------------------------------------------------
+
+enum RequestStatus {
+  EN_PROCESO
+  APROBADA
+  RECHAZADA
+  CANCELADA
+}
+
+model Request {
+  id              String        @id @default(cuid())
+  code            String        @unique
+  procedureTypeId String
+  citizenId       String
+  currentState    String
+  status          RequestStatus @default(EN_PROCESO)
+  formData        Json
+  dueAt           DateTime?
+  submittedAt     DateTime?
+  closedAt        DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  procedureType ProcedureType          @relation(fields: [procedureTypeId], references: [id])
+  citizen       User                   @relation("RequestCitizen", fields: [citizenId], references: [id])
+  documents     RequestDocument[]
+  transitions   WorkflowTransitionLog[]
+  signature     Signature?
+
+  @@index([status, dueAt])
+  @@index([procedureTypeId, currentState])
+}
+
+model RequestDocument {
+  id           String   @id @default(cuid())
+  requestId    String
+  label        String
+  filename     String
+  contentType  String
+  sizeBytes    Int
+  storageKey   String
+  uploadedById String
+  createdAt    DateTime @default(now())
+
+  request    Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  uploadedBy User    @relation(fields: [uploadedById], references: [id])
+}
+
+/// Historial inmutable de movimientos del flujo (una fila por transición aplicada).
+model WorkflowTransitionLog {
+  id        String   @id @default(cuid())
+  requestId String
+  fromState String
+  toState   String
+  action    String
+  actorId   String
+  comment   String?
+  effects   Json
+  createdAt DateTime @default(now())
+
+  request Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  actor   User    @relation(fields: [actorId], references: [id])
+
+  @@index([requestId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// 5. Firma digital
+// ---------------------------------------------------------------------------
+
+/// Firma criptográfica del acto administrativo al aprobarse una solicitud.
+/// `verificationCode` es el dato que viaja en el QR del PDF y que consulta
+/// el portal público de verificación.
+model Signature {
+  id                 String   @id @default(cuid())
+  requestId          String   @unique
+  signedById         String
+  algorithm          String   @default("RSA-SHA256")
+  documentHash       String
+  signatureValue     String
+  certificateSubject String
+  verificationCode   String   @unique
+  pdfStorageKey      String?
+  createdAt          DateTime @default(now())
+
+  request  Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  signedBy User    @relation(fields: [signedById], references: [id])
+}
+
+// ---------------------------------------------------------------------------
+// 6. Auditoría y notificaciones
+// ---------------------------------------------------------------------------
+
+/// Bitácora append-only de todo el sistema (no se actualiza ni se borra).
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String
+  entityType String
+  entityId   String
+  metadata   Json?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+enum NotificationChannel {
+  EMAIL
+  IN_APP
+}
+
+enum NotificationStatus {
+  PENDIENTE
+  ENVIADA
+  FALLIDA
+}
+
+model Notification {
+  id        String              @id @default(cuid())
+  userId    String
+  channel   NotificationChannel
+  subject   String
+  body      String
+  status    NotificationStatus  @default(PENDIENTE)
+  readAt    DateTime?
+  sentAt    DateTime?
+  createdAt DateTime            @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([status])
+}

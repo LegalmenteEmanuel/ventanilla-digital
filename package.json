@@ -1,0 +1,28 @@
+{
+  "name": "ventanilla-digital",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Plataforma GovTech de trámites institucionales: motor de flujos, firma digital y verificación pública.",
+  "license": "MIT",
+  "packageManager": "pnpm@11.22.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "pnpm -r run build",
+    "dev": "pnpm -r --parallel run dev",
+    "lint": "pnpm -r run lint",
+    "typecheck": "pnpm -r run typecheck",
+    "test": "pnpm -r run test",
+    "db:generate": "pnpm --filter @vd/db generate",
+    "db:migrate": "pnpm --filter @vd/db migrate",
+    "db:seed": "pnpm --filter @vd/db seed",
+    "infra:up": "docker compose up -d",
+    "infra:down": "docker compose down"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2"
+  }
+}
