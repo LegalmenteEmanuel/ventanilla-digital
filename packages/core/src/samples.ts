@@ -16,8 +16,8 @@ export const constanciaLaboralWorkflow: WorkflowDefinition = {
     { id: 'borrador', label: 'Borrador', type: 'initial' },
     { id: 'enviada', label: 'Enviada', type: 'intermediate', slaHours: 24 },
     { id: 'en_revision', label: 'En revisión', type: 'intermediate', slaHours: 72 },
-    { id: 'aprobada', label: 'Aprobada', type: 'terminal' },
-    { id: 'rechazada', label: 'Rechazada', type: 'terminal' },
+    { id: 'aprobada', label: 'Aprobada', type: 'terminal', terminalOutcome: 'APROBADA' },
+    { id: 'rechazada', label: 'Rechazada', type: 'terminal', terminalOutcome: 'RECHAZADA' },
   ],
   transitions: [
     {

@@ -24,6 +24,12 @@ export interface WorkflowState {
    * trámite se marca como "SLA vencido" para los tableros de gestión.
    */
   slaHours?: number;
+  /**
+   * Sólo para estados `terminal`: desenlace del trámite que la capa de
+   * aplicación traslada al estado de la solicitud (p. ej. `APROBADA`,
+   * `RECHAZADA`, `CANCELADA`).
+   */
+  terminalOutcome?: string;
 }
 
 /** Efecto declarativo a ejecutar tras una transición. */
@@ -93,6 +99,8 @@ export interface TransitionResult {
   dueAt: Date | null;
   /** `true` si el nuevo estado es terminal. */
   done: boolean;
+  /** Desenlace del estado terminal alcanzado, o `null` si no es terminal. */
+  outcome: string | null;
 }
 
 export interface Verdict {

@@ -37,6 +37,7 @@ test('camino feliz: borrador -> enviada -> en_revision -> aprobada', () => {
   const res = e.apply(inst, revisor, { action: 'aprobar' });
   assert.equal(res.instance.state, 'aprobada');
   assert.equal(res.done, true);
+  assert.equal(res.outcome, 'APROBADA');
   assert.ok(e.isTerminal(res.instance.state));
 
   const effectTypes = res.effects.map((x) => x.type);

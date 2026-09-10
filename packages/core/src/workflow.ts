@@ -44,6 +44,11 @@ export class WorkflowEngine {
     return this.states.get(stateId)?.type === 'terminal';
   }
 
+  /** Desenlace declarado para un estado terminal (`terminalOutcome`), o `null`. */
+  outcomeFor(stateId: string): string | null {
+    return this.states.get(stateId)?.terminalOutcome ?? null;
+  }
+
   /** Transiciones que el actor puede ejecutar ahora mismo. */
   availableActions(instance: WorkflowInstance, actor: Actor): WorkflowTransition[] {
     return this.def.transitions.filter(
@@ -100,6 +105,7 @@ export class WorkflowEngine {
       effects,
       dueAt: this.dueAt(next),
       done: this.isTerminal(t.to),
+      outcome: this.outcomeFor(t.to),
     };
   }
 

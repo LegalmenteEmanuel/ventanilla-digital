@@ -1,0 +1,102 @@
+openapi: 3.1.0
+info:
+  title: Ventanilla Digital — API
+  version: 0.1.0
+  description: >
+    Verificación pública de documentos firmados y descarga del PDF de una
+    solicitud. La verificación no requiere autenticación.
+  license:
+    name: MIT
+servers:
+  - url: http://localhost:3000
+    description: Desarrollo local
+
+paths:
+  /api/verificar/{code}:
+    get:
+      summary: Verificar un documento por su código
+      operationId: verificarDocumento
+      security: []
+      parameters:
+        - name: code
+          in: path
+          required: true
+          description: Código impreso en el PDF, formato `VD-XXXX-XXXX-XXXX`.
+          schema:
+            type: string
+            pattern: '^VD-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}$'
+      responses:
+        '200':
+          description: El documento existe y es auténtico.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificacionOk'
+        '404':
+          description: No existe ningún documento con ese código.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    const: false
+
+  /api/solicitudes/{code}/pdf:
+    get:
+      summary: Descargar el PDF firmado de una solicitud
+      operationId: descargarPdf
+      description: Sólo el ciudadano dueño o personal de la institución. Requiere sesión (cookie de Auth.js).
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: PDF de la constancia.
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: Sin sesión.
+        '403':
+          description: La sesión no tiene acceso a esta solicitud.
+        '404':
+          description: La solicitud no tiene documento firmado.
+
+components:
+  schemas:
+    VerificacionOk:
+      type: object
+      required: [valid, codigoVerificacion, solicitud, procedimiento, institucion, emitidoEl, algoritmo, hash]
+      properties:
+        valid:
+          const: true
+        codigoVerificacion:
+          type: string
+          example: VD-1A2B-3C4D-5E6F
+        solicitud:
+          type: string
+          example: VD-2026-9F3A1C7D
+        procedimiento:
+          type: string
+          example: Constancia laboral
+        institucion:
+          type: string
+          example: Alcaldía Municipal Demo
+        emitidoEl:
+          type: string
+          format: date-time
+        algoritmo:
+          type: string
+          example: RSA-SHA256
+        hash:
+          type: string
+          description: SHA-256 hexadecimal del payload canónico firmado.
+        certificado:
+          type: string
+          example: 'CN=Ventanilla Digital (DEMO), O=Alcaldia Municipal Demo, C=HN'
