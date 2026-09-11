@@ -43,3 +43,70 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: docker compose config
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: build
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: vd
+          POSTGRES_PASSWORD: vd
+          POSTGRES_DB: ventanilla
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U vd -d ventanilla"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s --health-retries 10
+      mailhog:
+        image: mailhog/mailhog:latest
+        ports: ['1025:1025', '8025:8025']
+    env:
+      AUTH_URL: http://localhost:3000
+      SMTP_HOST: localhost
+      SMTP_PORT: 1025
+      E2E_BASE_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm --filter @vd/db migrate:deploy
+      - run: pnpm db:seed
+      - run: pnpm --filter @vd/e2e exec playwright install --with-deps chromium
+
+      - name: Levantar web y worker
+        run: |
+          nohup pnpm --filter @vd/web start > web.log 2>&1 &
+          nohup pnpm --filter @vd/worker start > worker.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://localhost:3000 >/dev/null && exit 0; sleep 1; done
+          echo "apps/web no respondió a tiempo" && cat web.log && exit 1
+
+      - run: pnpm test:e2e
+
+      - name: Logs de web/worker (si algo falló)
+        if: failure()
+        run: |
+          echo "--- web.log ---"; cat web.log || true
+          echo "--- worker.log ---"; cat worker.log || true
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: apps/e2e/playwright-report/
+          retention-days: 7

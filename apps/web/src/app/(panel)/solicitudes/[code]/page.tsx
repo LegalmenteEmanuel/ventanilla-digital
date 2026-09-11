@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 
 import { WorkflowEngine, type WorkflowDefinition } from '@vd/core';
 
+import { PendingSignature } from '@/components/pending-signature';
 import { TransitionForm, type TransitionOption } from '@/components/transition-form';
 import { Card, StateBadge } from '@/components/ui';
 import { getRequestByCode } from '@/lib/data';
@@ -73,21 +74,29 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
         </dl>
       </Card>
 
-      {req.signature?.pdfStorageKey && (
+      {req.currentState === 'aprobada' && (
         <Card className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="font-semibold text-slate-900">Documento firmado</h2>
-            <p className="text-sm text-slate-500">
-              Código de verificación:{' '}
-              <span className="font-mono">{req.signature.verificationCode}</span>
-            </p>
+            {req.signature?.pdfStorageKey ? (
+              <p className="text-sm text-slate-500">
+                Código de verificación:{' '}
+                <span data-testid="verification-code" className="font-mono">
+                  {req.signature.verificationCode}
+                </span>
+              </p>
+            ) : (
+              <PendingSignature />
+            )}
           </div>
-          <a
-            href={`/api/solicitudes/${req.code}/pdf`}
-            className="rounded-md bg-blue-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-800"
-          >
-            Descargar PDF
-          </a>
+          {req.signature?.pdfStorageKey && (
+            <a
+              href={`/api/solicitudes/${req.code}/pdf`}
+              className="rounded-md bg-blue-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-800"
+            >
+              Descargar PDF
+            </a>
+          )}
         </Card>
       )}
 

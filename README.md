@@ -117,18 +117,18 @@ Ese diagrama **es** la `WorkflowDefinition` que vive en la base de datos
 
 ## Stack
 
-| Capa             | Tecnología                                                        |
-| ---------------- | ----------------------------------------------------------------- |
-| Frontend + BFF   | Next.js 15 (App Router, Server Actions), React 19, Tailwind 4     |
-| Dominio          | TypeScript puro (`@vd/core`), sin dependencias                    |
-| Datos            | PostgreSQL 16 + Prisma 6                                          |
-| Colas / trabajos | Redis + BullMQ (`apps/worker`)                                    |
-| Auth             | Auth.js (credenciales, JWT, RBAC por membresía)                   |
-| Validación       | Ajv (JSON Schema en la frontera de confianza)                     |
-| Documentos       | pdfkit + qrcode; almacén local (driver S3 pendiente)              |
-| Infra local      | Docker Compose (Postgres, Redis, Mailhog)                         |
-| Tooling          | pnpm workspaces, Prettier, `node:test`                            |
-| CI               | GitHub Actions (build · lint · typecheck · test · compose config) |
+| Capa             | Tecnología                                                              |
+| ---------------- | ----------------------------------------------------------------------- |
+| Frontend + BFF   | Next.js 15 (App Router, Server Actions), React 19, Tailwind 4           |
+| Dominio          | TypeScript puro (`@vd/core`), sin dependencias                          |
+| Datos            | PostgreSQL 16 + Prisma 6                                                |
+| Colas / trabajos | Redis + BullMQ (`apps/worker`)                                          |
+| Auth             | Auth.js (credenciales, JWT, RBAC por membresía)                         |
+| Validación       | Ajv (JSON Schema en la frontera de confianza)                           |
+| Documentos       | pdfkit + qrcode; almacén local (driver S3 pendiente)                    |
+| Infra local      | Docker Compose (Postgres, Redis, Mailhog)                               |
+| Tooling          | pnpm workspaces, Prettier, `node:test`, Playwright                      |
+| CI               | GitHub Actions (build · lint · typecheck · test · E2E · compose config) |
 
 ## Estructura
 
@@ -136,10 +136,11 @@ Ese diagrama **es** la `WorkflowDefinition` que vive en la base de datos
 ventanilla-digital/
 ├── apps/
 │   ├── web/        # Next.js — UI, Server Actions, API pública, portal de verificación
-│   └── worker/     # Consumidores BullMQ: firma, PDF+QR, correo, barrido de SLA
+│   ├── worker/     # Consumidores BullMQ: firma, PDF+QR, correo, barrido de SLA
+│   └── e2e/        # Playwright: flujo completo a través de la UI real
 ├── packages/
 │   ├── core/       # Motor de flujos — máquina de estados pura (16 tests)
-│   ├── db/         # Prisma schema, cliente singleton, seed, hash de contraseñas (scrypt)
+│   ├── db/         # Prisma schema + migraciones versionadas, cliente, seed, hash (scrypt)
 │   └── jobs/       # Contrato de colas compartido (nombres, tipos, conexión Redis)
 ├── docker-compose.yml
 └── .github/workflows/ci.yml
@@ -179,8 +180,32 @@ Contraseña `Password123!`:
 1. Entra como `ana@correo.local` → **Trámites → Constancia laboral** → completa y envía.
 2. Entra como `funcionario@…` → **Solicitudes** (bandeja) → **Tomar caso**.
 3. Entra como `revisor@…` → abre la solicitud → **Aprobar**.
-4. El worker firma, genera el PDF y notifica. En el detalle aparece **Descargar PDF** y el código de verificación.
+4. El worker firma y genera el PDF en segundo plano; la página se refresca sola
+   hasta que aparecen **Descargar PDF** y el código de verificación.
 5. Abre `/verificar`, pega el código → **Documento auténtico**.
+
+Este mismo recorrido es exactamente lo que automatiza la prueba E2E de abajo.
+
+## Pruebas end-to-end
+
+`apps/e2e` (Playwright) recorre la UI real con los tres roles: la ciudadana
+crea y envía una solicitud, el funcionario la toma, el revisor la aprueba, se
+espera a que el worker firme y genere el PDF, se descarga autenticado y se
+verifica en público — más el caso de un código inexistente.
+
+```bash
+pnpm --filter @vd/e2e exec playwright install chromium   # una vez
+
+# con la infra, el build y el seed ya hechos (ver arriba):
+pnpm --filter @vd/db migrate:deploy && pnpm db:seed
+pnpm --filter @vd/web start &      # o `next start -p 3100` si el :3000 está ocupado
+pnpm --filter @vd/worker start &
+
+E2E_BASE_URL=http://localhost:3000 pnpm test:e2e
+```
+
+Corre en CI (`.github/workflows/ci.yml`, job `e2e`) contra Postgres/Redis/Mailhog
+reales como servicios del runner.
 
 ## API pública
 
@@ -206,10 +231,10 @@ GET /api/verificar/VD-1A2B-3C4D-5E6F
 - [x] Firma digital y portal público de verificación (web + API)
 - [x] Barrido de SLA y panel de gestión
 - [x] Documentación OpenAPI de la API pública
-- [ ] Migración `prisma migrate` versionada en el repo (hoy `db push` / `migrate dev`)
+- [x] Migraciones Prisma versionadas en el repo (`prisma/migrations`)
+- [x] Pruebas end-to-end (Playwright) del flujo completo, en CI
 - [ ] Adjuntar documentos a la solicitud (`RequestDocument` + almacenamiento)
 - [ ] Driver de almacenamiento S3
-- [ ] Pruebas end-to-end (Playwright)
 - [ ] Despliegue de demo (Vercel + Neon + Upstash)
 
 ## Licencia
