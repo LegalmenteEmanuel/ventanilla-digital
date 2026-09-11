@@ -19,9 +19,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # La versión de pnpm viene de "packageManager" en package.json; pasarla
+      # también aquí hace que la acción falle por versión ambigua.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 11
 
       - uses: actions/setup-node@v4
         with:
@@ -74,9 +74,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # La versión de pnpm viene de "packageManager" en package.json; pasarla
+      # también aquí hace que la acción falle por versión ambigua.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 11
 
       - uses: actions/setup-node@v4
         with:
