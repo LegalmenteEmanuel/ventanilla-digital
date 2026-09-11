@@ -4,7 +4,7 @@
 > trámites con formularios dinámicos, **motor de flujos configurable**, firma
 > digital de los actos aprobados y **portal público de verificación** por QR.
 
-[![CI](https://github.com/emanuel070801/ventanilla-digital/actions/workflows/ci.yml/badge.svg)](https://github.com/emanuel070801/ventanilla-digital/actions/workflows/ci.yml)
+[![CI](https://github.com/LegalmenteEmanuel/ventanilla-digital/actions/workflows/ci.yml/badge.svg)](https://github.com/LegalmenteEmanuel/ventanilla-digital/actions/workflows/ci.yml)
 &nbsp;·&nbsp; TypeScript · Next.js 15 · React 19 · PostgreSQL · Prisma · Redis · BullMQ · Auth.js
 
 ---
